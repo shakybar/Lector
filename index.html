@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lector Rápido - Flash</title>
+    <style>
+        /* --- Estilos Generales --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- Vista de Configuración --- */
+        #setup-view {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            color: #fff;
+        }
+
+        /* Cabecera del área de texto para alinear el botón a la derecha */
+        .textarea-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: -10px;
+        }
+
+        .textarea-header label {
+            font-weight: bold;
+            color: #b0b0b0;
+        }
+
+        /* Botón de carga de plantilla dinámica */
+        #template-btn {
+            background-color: #2c2c2c;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 6px 14px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #template-btn:hover {
+            background-color: #3d3d3d;
+            border-color: #666;
+            transform: scale(1.05);
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background-color: #2c2c2c;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 16px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #b0b0b0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        #legend-text {
+            font-size: 15px;
+            text-align: center;
+            font-style: italic;
+            color: #ff9800;
+            min-height: 24px;
+            transition: color 0.3s ease;
+        }
+
+        /* --- Botones Inferiores --- */
+        .btn-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        #adult-btn {
+            background-color: #444;
+            color: #bbb;
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+
+        #adult-btn:hover {
+            background-color: #555;
+            color: #fff;
+        }
+
+        #adult-btn.unlocked {
+            background-color: #d32f2f;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.6);
+        }
+
+        #play-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 40px;
+            font-size: 18px;
+            flex-grow: 1;
+            margin-left: 15px;
+        }
+
+        #play-btn:hover {
+            background-color: #45a049;
+            transform: scale(1.02);
+        }
+
+        /* --- Vista de Lectura (Pantalla Completa) --- */
+        #reader-view {
+            display: none;
+            background-color: #000;
+            color: #fff;
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        #reader-text {
+            font-size: 8vw;
+            font-weight: bold;
+            line-height: 1.2;
+            padding: 20px;
+            color: #ffeb3b;
+        }
+
+        .exit-hint {
+            position: absolute;
+            bottom: 20px;
+            font-size: 16px;
+            color: #555;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-view">
+        <h1>Lectura Veloz</h1>
+        
+        <div class="textarea-header">
+            <label for="text-input">Texto para leer:</label>
+            <button id="template-btn" title="Cargar texto de ejemplo ideal para esta velocidad">🐌📥</button>
+        </div>
+        <textarea id="text-input" placeholder="Pega tu texto aquí o usa el botón de arriba para cargar un ejemplo..."></textarea>
+        
+        <div class="control-group">
+            <label for="chunk-slider">Palabras a la vez: <span id="chunk-val">1</span></label>
+            <input type="range" id="chunk-slider" min="1" max="10" value="1">
+        </div>
+
+        <div class="control-group">
+            <label for="speed-slider">Palabras Por Minuto (PPM): <span id="speed-val">5</span></label>
+            <input type="range" id="speed-slider" min="0" max="100" value="0">
+            <div id="legend-text">Cargando...</div>
+        </div>
+
+        <div class="btn-row">
+            <button id="adult-btn">🔒 Modo Adulto</button>
+            <button id="play-btn">▶ INICIAR LECTURA</button>
+        </div>
+    </div>
+
+    <div id="reader-view">
+        <div id="reader-text">Preparando...</div>
+        <div class="exit-hint">Haz clic en cualquier lugar o presiona ESC para salir</div>
+    </div>
+
+    <script>
+        const setupView = document.getElementById('setup-view');
+        const readerView = document.getElementById('reader-view');
+        const textInput = document.getElementById('text-input');
+        const chunkSlider = document.getElementById('chunk-slider');
+        const speedSlider = document.getElementById('speed-slider');
+        const chunkVal = document.getElementById('chunk-val');
+        const speedVal = document.getElementById('speed-val');
+        const legendText = document.getElementById('legend-text');
+        const adultBtn = document.getElementById('adult-btn');
+        const playBtn = document.getElementById('play-btn');
+        const templateBtn = document.getElementById('template-btn');
+        const readerText = document.getElementById('reader-text');
+
+        let isAdultMode = false;
+        let wordsArray = [];
+        let currentIndex = 0;
+        let intervalId = null;
+        let currentLevel = 'caracol'; // Rastrear nivel actual para el botón dinámico
+
+        // Escala Logarítmica
+        const minWPM = 5;
+        let maxWPM = 500;
+
+        // Base de Datos de Textos de Ejemplo según nivel
+        const textsDatabase = {
+            caracol: `El perrito Toby\nToby es un perrito muy juguetón. Tiene el pelo de color marrón y unas orejas grandes que se mueven con el viento. Todos los días, Toby va al parque grande de la ciudad con su pelota roja favorita. A él le gusta mucho correr rápido por el pasto y saltar muy alto para atrapar su pelota. Un día, Toby encontró un pequeño pajarito que estaba triste bajo un árbol. Toby se quedó a su lado para hacerle compañía y compartir su merienda. Toby es un perrito muy bueno y un gran amigo para todos.`,
+            
+            estudiante: `El Sistema Solar\nEl Sistema Solar está formado por el Sol y los planetas que giran a su alrededor. La Tierra es nuestro hogar y es el único lugar donde sabemos con certeza que existe vida. Tiene una gran cantidad de agua líquida en forma de océanos y una atmósfera rica en oxígeno que nos permite respirar. Los científicos estudian constantemente el espacio usando telescopios gigantes para descubrir nuevos misterios del universo.`,
+            
+            flash: `Velocidad de Escape Terrestre\nLa velocidad de escape es la velocidad mínima necesaria para que un objeto cualquiera escape del campo gravitatorio de un cuerpo celeste sin necesidad de propulsión adicional. Para nuestro planeta Tierra, esta velocidad crítica es de aproximadamente once kilómetros por segundo. Esto implica que un cohete espacial requiere una aceleración monumental para romper las cadenas de la gravedad y adentrarse con éxito en el vacío absoluto del cosmos exterior.`,
+            
+            cuantica: `Entrelazamiento Cuántico Dinámico\nEl entrelazamiento cuántico es un fenómeno de la física donde dos partículas subatómicas interactúan de tal forma que sus estados cuánticos se vinculan de manera absoluta. Cualquier modificación en una partícula genera una reacción idéntica e instantánea en la otra, sin importar si están separadas por unos centímetros o por galaxias enteras. Albert Einstein denominó a este asombroso proceso como acción fantasmal a la distancia debido a su naturaleza contraintuitiva.`,
+            
+            insane: `Hiperprocesamiento Cognitivo Exponencial Activo\nFlujo continuo de información neuronal directa optimizada para la asimilación masiva de datos estructurados en ráfagas sincronizadas de alta frecuencia visual. Las barreras tradicionales de lectura quedan completamente pulverizadas cuando el córtex traduce grafemas en conceptos abstractos puros de forma instantánea y sin pausas de articulación vocal. El cerebro procesa bloques masivos de semántica pura mientras la velocidad supera los límites humanos conocidos.`
+        };
+
+        function getLogWPM(position) {
+            return Math.round(minWPM * Math.pow((maxWPM / minWPM), position / 100));
+        }
+
+        chunkSlider.addEventListener('input', () => {
+            chunkVal.textContent = chunkSlider.value;
+        });
+
+        speedSlider.addEventListener('input', updateLegend);
+
+        // Evento para el botón dinámico 📥 que pega el texto correspondiente
+        templateBtn.addEventListener('click', () => {
+            textInput.value = textsDatabase[currentLevel];
+        });
+
+        adultBtn.addEventListener('click', () => {
+            isAdultMode = !isAdultMode;
+            if (isAdultMode) {
+                adultBtn.textContent = "🔓 Rango Desbloqueado";
+                adultBtn.classList.add('unlocked');
+                maxWPM = 1200;
+            } else {
+                adultBtn.textContent = "🔒 Modo Adulto";
+                adultBtn.classList.remove('unlocked');
+                maxWPM = 500;
+            }
+            updateLegend();
+        });
+
+        function updateLegend() {
+            const sliderPos = parseInt(speedSlider.value);
+            const wpm = getLogWPM(sliderPos);
+            speedVal.textContent = wpm;
+
+            // Actualiza leyenda, colores y el icono del botón dinámico
+            if (wpm < 150) {
+                currentLevel = 'caracol';
+                templateBtn.innerHTML = "🐌📥";
+                legendText.textContent = "Un caracol leería al menos una más... 🐌";
+                legendText.style.color = "#81c784";
+            } else if (wpm >= 150 && wpm < 400) {
+                currentLevel = 'estudiante';
+                templateBtn.innerHTML = "📚📥";
+                legendText.textContent = "Modo estudiante: asimilando conocimientos a buen ritmo. 📚";
+                legendText.style.color = "#64b5f6";
+            } else if (wpm >= 400 && wpm <= 500) {
+                currentLevel = 'flash';
+                templateBtn.innerHTML = "⚡📥";
+                legendText.textContent = "¡Huy cuidado Flash, te acabas la biblioteca! ⚡";
+                legendText.style.color = "#ffb74d";
+            } else if (wpm > 500 && wpm <= 800) {
+                currentLevel = 'cuantica';
+                templateBtn.innerHTML = "🌀📥";
+                legendText.textContent = "Lectura cuántica: ¿Seguro que estás leyendo? 🌀";
+                legendText.style.color = "#ba68c8";
+            } else if (wpm > 800) {
+                currentLevel = 'insane';
+                templateBtn.innerHTML = "🤯📥";
+                legendText.textContent = "¡RITMO INSANE! Tu cerebro está echando humo. 🤯🔥";
+                legendText.style.color = "#f44336";
+            }
+        }
+
+        // Lógica de Lectura
+        playBtn.addEventListener('click', () => {
+            const rawText = textInput.value.trim();
+            if (!rawText) {
+                alert("Por favor, pega algún texto o usa el botón 📥 para cargar un ejemplo.");
+                return;
+            }
+
+            wordsArray = rawText.split(/\s+/);
+            currentIndex = 0;
+
+            if (readerView.requestFullscreen) {
+                readerView.requestFullscreen().catch(err => {
+                    console.log(`Error al iniciar pantalla completa: ${err.message}`);
+                });
+            }
+
+            setupView.style.display = 'none';
+            readerView.style.display = 'flex';
+            
+            const wpm = getLogWPM(parseInt(speedSlider.value));
+            const chunkSize = parseInt(chunkSlider.value);
+            
+            // Intervalo ajustado por la cantidad de palabras simultáneas
+            const delayMs = (60000 / wpm) * chunkSize;
+
+            setTimeout(() => {
+                showNextChunk(chunkSize);
+                intervalId = setInterval(() => {
+                    showNextChunk(chunkSize);
+                }, delayMs);
+            }, 1000);
+        });
+
+        function showNextChunk(chunkSize) {
+            if (currentIndex >= wordsArray.length) {
+                stopReading();
+                return;
+            }
+
+            const chunk = wordsArray.slice(currentIndex, currentIndex + chunkSize);
+            readerText.textContent = chunk.join(' ');
+            currentIndex += chunkSize;
+        }
+
+        function stopReading() {
+            clearInterval(intervalId);
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(err => console.log(err));
+            }
+            readerView.style.display = 'none';
+            setupView.style.display = 'flex';
+            readerText.textContent = "Preparando...";
+        }
+
+        readerView.addEventListener('click', stopReading);
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && readerView.style.display === 'flex') {
+                stopReading();
+            }
+        });
+
+        // Inicialización inicial
+        updateLegend();
+    </script>
+</body>
+</html>
